@@ -1,0 +1,26 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+
+# Debug logs
+scormpleted-debug.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Build artifacts
+*.zip
+node_modules/
+vendor/
+
+# Temp
+*.tmp
+*.bak

@@ -1,0 +1,34 @@
+{
+    "apiVersion": 3,
+    "name": "scormpleted/scorm-player",
+    "title": "SCORM Content",
+    "category": "embed",
+    "icon": "welcome-learn-more",
+    "description": "Embed a SCORM package in a LearnDash lesson or topic.",
+    "keywords": ["scorm", "elearning", "lms", "learndash"],
+    "supports": {
+        "html": false,
+        "align": false
+    },
+    "attributes": {
+        "contentId": {
+            "type": "number",
+            "default": 0
+        },
+        "width": {
+            "type": "string",
+            "default": ""
+        },
+        "height": {
+            "type": "string",
+            "default": ""
+        },
+        "completionTracking": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "render": "file:./render.php",
+    "editorScript": "file:./index.js",
+    "textdomain": "scormpleted"
+}
