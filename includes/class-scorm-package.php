@@ -114,10 +114,23 @@ class Scormpleted_Package {
             'activity_id'          => $activity_id,
         );
 
-        self::save_package_data( $pkg_data );
+        $saved = self::save_package_data( $pkg_data );
 
         // Remove the original zip
         wp_delete_file( $upload['file'] );
+
+        if ( ! $saved ) {
+            // The post exists but has no matching package row — it would be
+            // invisible on the Content list (INNER JOIN) and unusable. Clean
+            // up the orphan post and extracted files rather than reporting
+            // a false success.
+            wp_delete_post( $post_id, true );
+            self::rmdir_recursive( $extract_result['content_path'] );
+            return array(
+                'success' => false,
+                'error'   => __( 'The package files were extracted but could not be saved to the database. Check the Scormpleted debug log or your site\'s error log for details.', 'scormpleted' ),
+            );
+        }
 
         return array( 'success' => true, 'post_id' => $post_id, 'title' => $post_title );
     }
@@ -315,6 +328,27 @@ class Scormpleted_Package {
         global $wpdb;
         $table = $wpdb->prefix . 'scormpleted_packages';
 
+        // Self-heal: if the packages table doesn't exist yet (e.g. the plugin
+        // was deployed by copying files rather than clicking "Activate" in
+        // wp-admin, so register_activation_hook never fired), create it now
+        // instead of silently failing every upload from here on.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
+        if ( ! $table_exists ) {
+            if ( class_exists( 'Scormpleted_Runtime' ) ) {
+                Scormpleted_Runtime::log( "save_package_data: table {$table} missing — running Scormpleted_DB::install()." );
+            }
+            Scormpleted_DB::install();
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
+            if ( ! $table_exists ) {
+                if ( class_exists( 'Scormpleted_Runtime' ) ) {
+                    Scormpleted_Runtime::log( "save_package_data: table {$table} still missing after install() — wpdb error: " . $wpdb->last_error );
+                }
+                return false;
+            }
+        }
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $existing = $wpdb->get_var( $wpdb->prepare(
             "SELECT id FROM `{$wpdb->prefix}scormpleted_packages` WHERE post_id = %d LIMIT 1",
@@ -344,11 +378,23 @@ class Scormpleted_Package {
 
         if ( $existing ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $wpdb->update( $table, $row, array( 'post_id' => $row['post_id'] ) );
+            $result = $wpdb->update( $table, $row, array( 'post_id' => $row['post_id'] ) );
         } else {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $wpdb->insert( $table, $row );
+            $result = $wpdb->insert( $table, $row );
         }
+
+        if ( false === $result ) {
+            if ( class_exists( 'Scormpleted_Runtime' ) ) {
+                Scormpleted_Runtime::log( "save_package_data: DB write failed for post_id={$row['post_id']} — wpdb error: " . $wpdb->last_error );
+            }
+            return false;
+        }
+
+        // Bust the cached row so get_package() doesn't serve a stale/empty result.
+        wp_cache_delete( 'scormpleted_pkg_' . $row['post_id'], 'scormpleted' );
+
+        return true;
     }
 
     public static function get_package( $post_id ) {

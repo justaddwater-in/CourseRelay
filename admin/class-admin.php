@@ -152,13 +152,13 @@ class Scormpleted_Admin {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
             $total = (int) $wpdb->get_var( $count_sql );
         } else {
-            $select_vals = array_merge( $where_values, array( $per_page, $offset ) );
-            $count_vals  = $where_values;
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-            $completions = $wpdb->get_results( $wpdb->prepare( $select_sql . ' LIMIT %d OFFSET %d', $select_vals ) );
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-            $total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $count_vals ) );
-        }
+    $select_vals = array_merge( $where_values, array( $per_page, $offset ) );
+    $count_vals  = $where_values;
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+    $completions = $wpdb->get_results( $wpdb->prepare( $select_sql . ' LIMIT %d OFFSET %d', ...$select_vals ) );
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+    $total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$count_vals ) );
+}
 
         $scormpleted_report_data = array(
             'per_page'   => $per_page,

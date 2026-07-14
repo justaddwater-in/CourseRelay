@@ -327,12 +327,14 @@ class Scormpleted_LearnDash {
         $scormpleted_post_obj = get_post( $post_id );
         if ( $scormpleted_post_obj ) {
             if ( $post_type === 'sfwd-lessons' ) {
+                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally firing LearnDash's own hook, not defining a new one.
                 do_action( 'learndash_lesson_completed', array(
                     'user'   => get_userdata( $user_id ),
                     'course' => get_post( $course_id ),
                     'lesson' => $scormpleted_post_obj,
                 ) );
             } elseif ( $post_type === 'sfwd-topic' ) {
+                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally firing LearnDash's own hook, not defining a new one.
                 do_action( 'learndash_topic_completed', array(
                     'user'   => get_userdata( $user_id ),
                     'course' => get_post( $course_id ),
@@ -369,16 +371,19 @@ class Scormpleted_LearnDash {
 
         // ── LiteSpeed Cache ───────────────────────────────────────────────────
         if ( class_exists( 'LiteSpeed_Cache_API' ) || defined( 'LSCWP_V' ) ) {
-            // Purge the lesson/topic post
-            do_action( 'litespeed_purge_post', $post_id );
-            // Purge the course page
-            if ( $course_id ) {
-                do_action( 'litespeed_purge_post', $course_id );
-            }
-            // Purge the user's private cache (ESI blocks etc.)
-            do_action( 'litespeed_purge_all_private' );
-            Scormpleted_Runtime::log( "purge_cache: LiteSpeed purged." );
-        }
+    // Purge the lesson/topic post
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally firing LiteSpeed Cache's own hook, not defining a new one.
+    do_action( 'litespeed_purge_post', $post_id );
+    // Purge the course page
+    if ( $course_id ) {
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally firing LiteSpeed Cache's own hook, not defining a new one.
+        do_action( 'litespeed_purge_post', $course_id );
+    }
+    // Purge the user's private cache (ESI blocks etc.)
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally firing LiteSpeed Cache's own hook, not defining a new one.
+    do_action( 'litespeed_purge_all_private' );
+    Scormpleted_Runtime::log( "purge_cache: LiteSpeed purged." );
+}
 
         // ── WP Rocket ─────────────────────────────────────────────────────────
         if ( function_exists( 'rocket_clean_post' ) ) {
@@ -438,17 +443,31 @@ class Scormpleted_LearnDash {
         // Fallback: write directly to activity table for older LD versions
         global $wpdb;
         $scormpleted_table = $wpdb->prefix . 'learndash_user_activity';
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$scormpleted_table}'" ) !== $scormpleted_table ) {
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $table_exists = $wpdb->get_var(
+            $wpdb->prepare(
+                'SHOW TABLES LIKE %s',
+                $scormpleted_table
+            )
+        );
+
+        if ( $table_exists !== $scormpleted_table ) {
             Scormpleted_Runtime::log( "learndash_user_activity table not found." );
             return;
         }
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $scormpleted_existing = $wpdb->get_var( $wpdb->prepare(
-            "SELECT activity_id FROM `{$scormpleted_table}` WHERE user_id = %d AND post_id = %d AND course_id = %d LIMIT 1",
-            $user_id, $post_id, $course_id
-        ) );
+$table = esc_sql( $wpdb->prefix . 'learndash_user_activity' );
+
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$scormpleted_existing = $wpdb->get_var(
+    $wpdb->prepare(
+        'SELECT activity_id FROM `' . esc_sql( $scormpleted_table ) . '` WHERE user_id = %d AND post_id = %d AND course_id = %d LIMIT 1',
+        $user_id,
+        $post_id,
+        $course_id
+    )
+);
 
         $scormpleted_activity_type = 'lesson';
         if ( $post_type === 'sfwd-topic' ) $scormpleted_activity_type = 'topic';

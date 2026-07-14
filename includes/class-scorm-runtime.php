@@ -220,7 +220,8 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         // The JS runtime has no access to WP nonces. Security is provided by
         // wp_get_current_user() check above — only logged-in users can commit data.
         // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput
-        $params        = isset( $_REQUEST['params'] ) ? wp_unslash( $_REQUEST['params'] ) : array();
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+        $params = isset( $_REQUEST['params'] ) ? wp_unslash( $_REQUEST['params'] ) : array();
         $data          = isset( $params['data'] )          ? (array) $params['data']          : array();
         $scorm_version = isset( $params['scorm_version'] ) ? sanitize_text_field( wp_unslash( $params['scorm_version'] ) ) : '1.2';
         $keys          = self::cmi_keys( $scorm_version );
@@ -569,8 +570,16 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
     public static function log( $msg ) {
         if ( ! Scormpleted_Settings::is_debug() ) return;
 
-        $log_file = WP_CONTENT_DIR . '/scormpleted-debug.log';
-        $htaccess  = WP_CONTENT_DIR . '/scormpleted-debug-deny.htaccess';
+        $upload_dir = wp_upload_dir();
+
+        $log_dir = trailingslashit( $upload_dir['basedir'] ) . 'scormpleted';
+
+        if ( ! file_exists( $log_dir ) ) {
+            wp_mkdir_p( $log_dir );
+        }
+
+        $log_file = trailingslashit( $log_dir ) . 'scormpleted-debug.log';
+        $htaccess = trailingslashit( $log_dir ) . '.htaccess';
 
         // Protect log from direct web access on first write
         if ( ! file_exists( $htaccess ) ) {
