@@ -1,9 +1,9 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class Scormpleted_Settings {
+class CourseRelay_Settings {
 
-    const OPTION_KEY = 'scormpleted_settings';
+    const OPTION_KEY = 'courserelay_settings';
 
     private static $defaults = array(
         'width'              => '100%',
@@ -37,8 +37,8 @@ class Scormpleted_Settings {
     }
 
     public static function is_debug() {
-        // Allow forcing debug via wp-config.php: define( 'SCORMPLETED_DEBUG', true );
-        if ( defined( 'SCORMPLETED_DEBUG' ) && SCORMPLETED_DEBUG ) return true;
+        // Allow forcing debug via wp-config.php: define( 'COURSERELAY_DEBUG', true );
+        if ( defined( 'COURSERELAY_DEBUG' ) && COURSERELAY_DEBUG ) return true;
         return (bool) self::get( 'debug' );
     }
 }

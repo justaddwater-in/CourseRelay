@@ -1,6 +1,6 @@
 {
     "apiVersion": 3,
-    "name": "scormpleted/scorm-player",
+    "name": "courserelay/scorm-player",
     "title": "SCORM Content",
     "category": "embed",
     "icon": "welcome-learn-more",
@@ -30,5 +30,5 @@
     },
     "render": "file:./render.php",
     "editorScript": "file:./index.js",
-    "textdomain": "scormpleted"
+    "textdomain": "courserelay"
 }

@@ -1,5 +1,5 @@
 /**
- * Scormpleted — SCORM 2004 Runtime API
+ * CourseRelay — SCORM 2004 Runtime API
  *
  * ARCHITECTURE: Same as scorm-runtime-12.js — runs in the launch page (parent).
  * SCORM 2004 content calls window.parent.API_1484_11.Initialize() etc.
@@ -9,12 +9,12 @@
 (function (w) {
     'use strict';
 
-    if (typeof SCORMPLETED === 'undefined') {
-        console.error('[Scormpleted] SCORMPLETED config not found on launch page.');
+    if (typeof COURSERELAY === 'undefined') {
+        console.error('[CourseRelay] COURSERELAY config not found on launch page.');
         return;
     }
 
-    var ajaxUrl     = SCORMPLETED.ajax_url;
+    var ajaxUrl     = COURSERELAY.ajax_url;
     var scormVer    = '2004';
     var commitTimer = null;
     var initialized = false;
@@ -23,6 +23,7 @@
     function buildPostBody(action) {
         var parts = [];
         parts.push('action=' + encodeURIComponent(action));
+        parts.push('params%5Bnonce%5D=' + encodeURIComponent(COURSERELAY.nonce || ''));
         parts.push('params%5Bscorm_version%5D=' + encodeURIComponent(scormVer));
         for (var key in cache) {
             if (Object.prototype.hasOwnProperty.call(cache, key)) {
@@ -47,15 +48,15 @@
         if (commitTimer) clearTimeout(commitTimer);
         commitTimer = setTimeout(function () {
             commitTimer = null;
-            sendAjax('scormpleted_commit', true);
+            sendAjax('courserelay_commit', true);
         }, 500);
     }
 
     function shouldCommit() {
-        var checks = SCORMPLETED.commit_checks || [
+        var checks = COURSERELAY.commit_checks || [
             'cmi.suspend_data', 'cmi.completion_status', 'cmi.location'
         ];
-        var last = SCORMPLETED._last || {};
+        var last = COURSERELAY._last || {};
         for (var i = 0; i < checks.length; i++) {
             if (cache[checks[i]] !== last[checks[i]]) return true;
         }
@@ -63,10 +64,10 @@
     }
 
     function snapshotCache() {
-        SCORMPLETED._last = {};
+        COURSERELAY._last = {};
         for (var k in cache) {
             if (Object.prototype.hasOwnProperty.call(cache, k)) {
-                SCORMPLETED._last[k] = cache[k];
+                COURSERELAY._last[k] = cache[k];
             }
         }
     }
@@ -86,7 +87,7 @@
             if (finished) return 'true';
             finished = true;
             if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; }
-            sendAjax('scormpleted_finish', false); // synchronous
+            sendAjax('courserelay_finish', false); // synchronous
             return 'true';
         },
 
@@ -108,12 +109,12 @@
                          ( cache[successKey]    && doneSuccess[ cache[successKey] ] );
 
             if (isDone) {
-                if (!SCORMPLETED._completion_commit_sent) {
-                    SCORMPLETED._completion_commit_sent = true;
+                if (!COURSERELAY._completion_commit_sent) {
+                    COURSERELAY._completion_commit_sent = true;
                     if (commitTimer) clearTimeout(commitTimer);
                     commitTimer = setTimeout(function () {
                         commitTimer = null;
-                        sendAjax('scormpleted_commit', true);
+                        sendAjax('courserelay_commit', true);
                     }, 2000);
                 }
                 return 'true';
@@ -128,7 +129,7 @@
 
         Commit: function (param) {
             if (commitTimer) { clearTimeout(commitTimer); commitTimer = null; }
-            sendAjax('scormpleted_commit', true);
+            sendAjax('courserelay_commit', true);
             return 'true';
         },
 

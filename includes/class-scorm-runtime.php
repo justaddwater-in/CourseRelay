@@ -5,27 +5,27 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * SCORM Runtime
  *
  * Handles three AJAX endpoints:
- *   scormpleted_launch  — outputs a full HTML page containing the SCORM JS API
+ *   courserelay_launch  — outputs a full HTML page containing the SCORM JS API
  *                          and an iframe pointing to the content's launch file.
- *   scormpleted_commit  — saves CMI data sent by the SCORM package.
- *   scormpleted_finish  — updates total_time, detects completion, triggers LearnDash.
+ *   courserelay_commit  — saves CMI data sent by the SCORM package.
+ *   courserelay_finish  — updates total_time, detects completion, triggers LearnDash.
  *
  * Architecture mirrors GrassBlade's scorm/functions.php but is fully independent.
  */
-class Scormpleted_Runtime {
+class CourseRelay_Runtime {
 
     public static function init() {
         // Launch — outputs full HTML page, no wp_head/wp_footer
-        add_action( 'wp_ajax_scormpleted_launch',        array( __CLASS__, 'handle_launch' ) );
-        add_action( 'wp_ajax_nopriv_scormpleted_launch', array( __CLASS__, 'handle_launch' ) );
+        add_action( 'wp_ajax_courserelay_launch',        array( __CLASS__, 'handle_launch' ) );
+        add_action( 'wp_ajax_nopriv_courserelay_launch', array( __CLASS__, 'handle_launch' ) );
 
         // Commit — save CMI data
-        add_action( 'wp_ajax_scormpleted_commit',        array( __CLASS__, 'handle_commit' ) );
-        add_action( 'wp_ajax_nopriv_scormpleted_commit', array( __CLASS__, 'handle_commit' ) );
+        add_action( 'wp_ajax_courserelay_commit',        array( __CLASS__, 'handle_commit' ) );
+        add_action( 'wp_ajax_nopriv_courserelay_commit', array( __CLASS__, 'handle_commit' ) );
 
         // Finish — end session, trigger completion
-        add_action( 'wp_ajax_scormpleted_finish',        array( __CLASS__, 'handle_finish' ) );
-        add_action( 'wp_ajax_nopriv_scormpleted_finish', array( __CLASS__, 'handle_finish' ) );
+        add_action( 'wp_ajax_courserelay_finish',        array( __CLASS__, 'handle_finish' ) );
+        add_action( 'wp_ajax_nopriv_courserelay_finish', array( __CLASS__, 'handle_finish' ) );
     }
 
     // ── CMI Key Maps (SCORM 1.2 vs 2004) ─────────────────────────────────────
@@ -90,7 +90,7 @@ class Scormpleted_Runtime {
             exit;
         }
 
-        $pkg  = Scormpleted_Package::get_package( $content_id );
+        $pkg  = CourseRelay_Package::get_package( $content_id );
         $user = wp_get_current_user();
 
         if ( ! $pkg ) {
@@ -105,12 +105,12 @@ class Scormpleted_Runtime {
             exit;
         }
 
-        $registration  = Scormpleted_Registration::get( $content_id, $user->ID );
+        $registration  = CourseRelay_Registration::get( $content_id, $user->ID );
         $scorm_version = ( $pkg->version === 'scorm2004' ) ? '2004' : '1.2';
         $keys          = self::cmi_keys( $scorm_version );
 
         // Load existing CMI data for resume
-        $scorm_data = Scormpleted_DB::get_scorm_data( $content_id, $registration, null, '', $user->ID );
+        $scorm_data = CourseRelay_DB::get_scorm_data( $content_id, $registration, null, '', $user->ID );
 
         // Build initial CMI cache (mirrors GrassBlade's scorm_launch)
         if ( empty( $scorm_data ) ) {
@@ -151,11 +151,36 @@ class Scormpleted_Runtime {
             'activity_id'    => $pkg->activity_id ?: $pkg->content_url,
             'commit_checks'  => array( $keys['cmi.suspend_data'], $keys['cmi.completion_status'], $keys['cmi.location'] ),
             'is_2004'        => $is_2004,
+            // Runtime commit/finish endpoints can't use a form nonce field (they're
+            // called by the SCORM JS API, not a submitted form), so the nonce is
+            // handed to the JS runtime here and sent back with every AJAX call.
+            'nonce'          => wp_create_nonce( 'courserelay_runtime' ),
         );
 
-        $runtime_url_12   = SCORMPLETED_URL . 'assets/js/scorm-runtime-12.js?v=' . SCORMPLETED_VERSION;
-        $runtime_url_2004 = SCORMPLETED_URL . 'assets/js/scorm-runtime-2004.js?v=' . SCORMPLETED_VERSION;
-        $src              = esc_url( $pkg->src );
+        $src = esc_url( $pkg->src );
+
+        // ── Register/enqueue the runtime script through core WP APIs ───────────
+        // This is a standalone page (no wp_head/wp_footer), so wp_enqueue_scripts
+        // never fires here — we register, localize, and enqueue the handle
+        // ourselves, then print it immediately with wp_print_scripts().
+        $runtime_handle = $is_2004 ? 'courserelay-runtime-2004' : 'courserelay-runtime-12';
+        $runtime_url    = $is_2004
+            ? COURSERELAY_URL . 'assets/js/scorm-runtime-2004.js'
+            : COURSERELAY_URL . 'assets/js/scorm-runtime-12.js';
+
+        wp_register_script( $runtime_handle, $runtime_url, array(), COURSERELAY_VERSION, false );
+        wp_localize_script( $runtime_handle, 'COURSERELAY', $GB_SCORM );
+        wp_add_inline_script( $runtime_handle, 'var cache = COURSERELAY.cache;', 'before' );
+        wp_enqueue_script( $runtime_handle );
+
+        wp_register_style( 'courserelay-launch-page', false, array(), COURSERELAY_VERSION );
+        wp_add_inline_style(
+            'courserelay-launch-page',
+            '* { margin: 0; padding: 0; box-sizing: border-box; }
+             html, body { width: 100%; height: 100%; overflow: hidden; }
+             iframe { width: 100%; height: 100%; border: none; display: block; }'
+        );
+        wp_enqueue_style( 'courserelay-launch-page' );
 
         // Output a standalone HTML page — no WP head/footer
         header( 'Content-Type: text/html; charset=utf-8' );
@@ -165,20 +190,11 @@ class Scormpleted_Runtime {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?php echo esc_html( $title ); ?></title>
-<script>
-var SCORMPLETED = <?php echo wp_json_encode( $GB_SCORM ); ?>;
-var cache = SCORMPLETED.cache;
-</script>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; }
-iframe { width: 100%; height: 100%; border: none; display: block; }
-</style>
+<?php wp_print_styles( 'courserelay-launch-page' ); ?>
 </head>
 <body>
+<?php wp_print_scripts( $runtime_handle ); ?>
 <?php if ( $is_2004 ) : ?>
-<?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone SCORM launch page, not a WP template ?>
-<script src="<?php echo esc_url( $runtime_url_2004 ); ?>"></script>
 <iframe
     title="<?php echo esc_attr( $title ); ?>"
     src="<?php echo esc_url( $src ); ?>"
@@ -189,8 +205,6 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
     onunload="API_1484_11.Terminate('');"
 ></iframe>
 <?php else : ?>
-<?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone SCORM launch page, not a WP template ?>
-<script src="<?php echo esc_url( $runtime_url_12 ); ?>"></script>
 <iframe
     title="<?php echo esc_attr( $title ); ?>"
     src="<?php echo esc_url( $src ); ?>"
@@ -216,14 +230,24 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
             exit;
         }
 
-        // SCORM commit is called directly by the SCORM JS runtime (LMSCommit/SetValue).
-        // The JS runtime has no access to WP nonces. Security is provided by
-        // wp_get_current_user() check above — only logged-in users can commit data.
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+        // SCORM commit is called directly by the SCORM JS runtime (LMSCommit/SetValue),
+        // not from a submitted form, so the nonce travels inside params (embedded in
+        // the launch page via wp_localize_script) instead of the usual form field.
+        // $params is a nested CMI key/value array whose shape varies per SCORM version,
+        // so it cannot be sanitized in bulk here; each scalar is validated/sanitized by
+        // its own rule right before use (nonce, scorm_version below) or in
+        // CourseRelay_DB::sanitize_cmi_value() right before it is written to the database.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $params = isset( $_REQUEST['params'] ) ? wp_unslash( $_REQUEST['params'] ) : array();
+
+        $nonce = isset( $params['nonce'] ) ? sanitize_text_field( $params['nonce'] ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'courserelay_runtime' ) ) {
+            echo wp_json_encode( 'Error: invalid nonce' );
+            exit;
+        }
+
         $data          = isset( $params['data'] )          ? (array) $params['data']          : array();
-        $scorm_version = isset( $params['scorm_version'] ) ? sanitize_text_field( wp_unslash( $params['scorm_version'] ) ) : '1.2';
+        $scorm_version = isset( $params['scorm_version'] ) ? sanitize_text_field( $params['scorm_version'] ) : '1.2';
         $keys          = self::cmi_keys( $scorm_version );
 
         $content_id      = isset( $data[ $keys['cmi.content_id'] ] )     ? intval( $data[ $keys['cmi.content_id'] ] )                         : 0;
@@ -237,14 +261,14 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         self::log( "handle_commit: user={$user->ID} content=$content_id reg=$registration_id version=$scorm_version" );
 
         // ── OWNERSHIP VALIDATION ───────────────────────────────────────────────
-        $pkg = Scormpleted_Package::get_package( $content_id );
+        $pkg = CourseRelay_Package::get_package( $content_id );
         if ( ! $pkg ) {
             self::log( "handle_commit: content_id=$content_id not found — aborting." );
             echo wp_json_encode( 'Error: content not found' );
             exit;
         }
 
-        $expected_registration = Scormpleted_Registration::get( $content_id, $user->ID );
+        $expected_registration = CourseRelay_Registration::get( $content_id, $user->ID );
         self::log( "handle_commit: expected_reg=$expected_registration posted_reg=$registration_id match=" . ( hash_equals( $expected_registration, $registration_id ) ? 'yes' : 'NO' ) );
         if ( ! hash_equals( $expected_registration, $registration_id ) ) {
             self::log( "handle_commit: registration mismatch — aborting." );
@@ -259,7 +283,7 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $already_done = $wpdb->get_var( $wpdb->prepare(
-            "SELECT id FROM {$wpdb->prefix}scormpleted_completions
+            "SELECT id FROM {$wpdb->prefix}courserelay_completions
              WHERE user_id = %d AND content_id = %d AND registration = %s LIMIT 1",
             $user->ID, $content_id, $registration_id
         ) );
@@ -267,7 +291,7 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         if ( $already_done ) {
             // Still save the CMI data but skip the completion check
             foreach ( $data as $var_key => $var_value ) {
-                Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $var_key, $var_value, $user->ID );
+                CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $var_key, $var_value, $user->ID );
             }
             echo wp_json_encode( 'Commit Success' );
             exit;
@@ -283,12 +307,12 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
                 $status = isset( $data[ $completion_key ] ) ? strtolower( trim( $data[ $completion_key ] ) ) : '';
                 $exit   = isset( $data[ $exit_key ] )       ? strtolower( trim( $data[ $exit_key ] ) )       : '';
                 if ( in_array( $status, array( 'completed', 'passed' ), true ) ) {
-                    Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $entry_key, '', $user->ID );
+                    CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $entry_key, '', $user->ID );
                 } elseif ( $exit === 'suspend' ) {
-                    Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $entry_key, 'resume', $user->ID );
+                    CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $entry_key, 'resume', $user->ID );
                 }
             } else {
-                Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $var_key, $var_value, $user->ID );
+                CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $var_key, $var_value, $user->ID );
             }
         }
 
@@ -308,11 +332,23 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
             exit;
         }
 
-        // SCORM finish is called by the JS runtime (LMSFinish/Terminate) — no nonce possible.
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
-        $params        = isset( $_REQUEST['params'] ) ? wp_unslash( $_REQUEST['params'] ) : array();
+        // SCORM finish is called by the JS runtime (LMSFinish/Terminate), not a
+        // submitted form, so the nonce travels inside params (see handle_launch).
+        // $params is a nested CMI key/value array whose shape varies per SCORM version,
+        // so it cannot be sanitized in bulk here; each scalar is validated/sanitized by
+        // its own rule right before use (nonce, scorm_version below) or in
+        // CourseRelay_DB::sanitize_cmi_value() right before it is written to the database.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+        $params = isset( $_REQUEST['params'] ) ? wp_unslash( $_REQUEST['params'] ) : array();
+
+        $nonce = isset( $params['nonce'] ) ? sanitize_text_field( $params['nonce'] ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'courserelay_runtime' ) ) {
+            echo wp_json_encode( 'Finish Success' );
+            exit;
+        }
+
         $data          = isset( $params['data'] )          ? (array) $params['data']          : array();
-        $scorm_version = isset( $params['scorm_version'] ) ? sanitize_text_field( wp_unslash( $params['scorm_version'] ) ) : '1.2';
+        $scorm_version = isset( $params['scorm_version'] ) ? sanitize_text_field( $params['scorm_version'] ) : '1.2';
         $keys          = self::cmi_keys( $scorm_version );
 
         $content_id      = isset( $data[ $keys['cmi.content_id'] ] )      ? intval( $data[ $keys['cmi.content_id'] ] )                        : 0;
@@ -324,13 +360,13 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         }
 
         // ── OWNERSHIP VALIDATION ───────────────────────────────────────────────
-        $pkg = Scormpleted_Package::get_package( $content_id );
+        $pkg = CourseRelay_Package::get_package( $content_id );
         if ( ! $pkg ) {
             echo wp_json_encode( 'Finish Success' );
             exit;
         }
 
-        $expected_registration = Scormpleted_Registration::get( $content_id, $user->ID );
+        $expected_registration = CourseRelay_Registration::get( $content_id, $user->ID );
         if ( ! hash_equals( $expected_registration, $registration_id ) ) {
             echo wp_json_encode( 'Finish Success' );
             exit;
@@ -343,24 +379,24 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         $session_key    = $keys['cmi.session_time'];
 
         // If lesson status is 'not attempted', upgrade to 'completed'
-        $current_status = Scormpleted_DB::get_scorm_data( $content_id, $registration_id, $completion_key, '', $user->ID );
+        $current_status = CourseRelay_DB::get_scorm_data( $content_id, $registration_id, $completion_key, '', $user->ID );
         if ( $current_status === 'not attempted' ) {
-            Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $completion_key, 'completed', $user->ID );
+            CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $completion_key, 'completed', $user->ID );
         }
 
         // Update total_time = old total_time + session_time
-        $total_time   = Scormpleted_DB::get_scorm_data( $content_id, $registration_id, $total_time_key, '0000:00:00', $user->ID );
-        $session_time = Scormpleted_DB::get_scorm_data( $content_id, $registration_id, $session_key, '', $user->ID );
+        $total_time   = CourseRelay_DB::get_scorm_data( $content_id, $registration_id, $total_time_key, '0000:00:00', $user->ID );
+        $session_time = CourseRelay_DB::get_scorm_data( $content_id, $registration_id, $session_key, '', $user->ID );
         $new_total    = self::seconds_to_time( self::time_to_seconds( $total_time ) + self::time_to_seconds( $session_time ) );
-        Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $total_time_key, $new_total, $user->ID );
-        Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $session_key, '', $user->ID );
+        CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $total_time_key, $new_total, $user->ID );
+        CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $session_key, '', $user->ID );
 
         // Update entry based on exit
-        $exit = Scormpleted_DB::get_scorm_data( $content_id, $registration_id, $exit_key, '', $user->ID );
-        Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $entry_key, '', $user->ID );
-        $final_status = Scormpleted_DB::get_scorm_data( $content_id, $registration_id, $completion_key, '', $user->ID );
+        $exit = CourseRelay_DB::get_scorm_data( $content_id, $registration_id, $exit_key, '', $user->ID );
+        CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $entry_key, '', $user->ID );
+        $final_status = CourseRelay_DB::get_scorm_data( $content_id, $registration_id, $completion_key, '', $user->ID );
         if ( $exit === 'suspend' && ! in_array( strtolower( $final_status ), array( 'completed', 'passed' ), true ) ) {
-            Scormpleted_DB::set_scorm_data( $content_id, $registration_id, $entry_key, 'resume', $user->ID );
+            CourseRelay_DB::set_scorm_data( $content_id, $registration_id, $entry_key, 'resume', $user->ID );
         }
 
         // Try completion
@@ -379,7 +415,7 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
     public static function maybe_complete( $content_id, $registration_id, $user_id, $data, $keys, $scorm_version ) {
         self::log( "maybe_complete: content=$content_id reg=$registration_id user=$user_id" );
 
-        $pkg = Scormpleted_Package::get_package( $content_id );
+        $pkg = CourseRelay_Package::get_package( $content_id );
         if ( ! $pkg ) {
             self::log( "maybe_complete: package not found — aborting." );
             return;
@@ -399,14 +435,14 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
 
         $lesson_status = isset( $data[ $completion_key ] )
             ? strtolower( trim( $data[ $completion_key ] ) )
-            : strtolower( trim( Scormpleted_DB::get_scorm_data( $content_id, $registration_id, $completion_key, '', $user_id ) ) );
+            : strtolower( trim( CourseRelay_DB::get_scorm_data( $content_id, $registration_id, $completion_key, '', $user_id ) ) );
 
         $success_status = '';
         if ( $scorm_version === '2004' && isset( $keys['cmi.success_status'] ) ) {
             $success_key    = $keys['cmi.success_status'];
             $success_status = isset( $data[ $success_key ] )
                 ? strtolower( trim( $data[ $success_key ] ) )
-                : strtolower( trim( Scormpleted_DB::get_scorm_data( $content_id, $registration_id, $success_key, '', $user_id ) ) );
+                : strtolower( trim( CourseRelay_DB::get_scorm_data( $content_id, $registration_id, $success_key, '', $user_id ) ) );
         }
 
         self::log( "maybe_complete: lesson_status=$lesson_status success_status=$success_status mastery={$pkg->mastery_score}" );
@@ -427,7 +463,7 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $already = $wpdb->get_var( $wpdb->prepare(
-            "SELECT id FROM {$wpdb->prefix}scormpleted_completions
+            "SELECT id FROM {$wpdb->prefix}courserelay_completions
              WHERE user_id = %d AND content_id = %d AND registration = %s LIMIT 1",
             $user_id, $content_id, $registration_id
         ) );
@@ -471,15 +507,15 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
         self::log( "maybe_complete: selected post_id=$post_id course_id=$course_id score=$score" );
 
         // Store completion record
-        Scormpleted_DB::store_completion( $content_id, $registration_id, $user_id, $post_id, $course_id, $final_status, $score );
+        CourseRelay_DB::store_completion( $content_id, $registration_id, $user_id, $post_id, $course_id, $final_status, $score );
         self::log( "maybe_complete: completion record stored." );
 
         // Trigger LearnDash
         if ( $post_id ) {
             self::log( "maybe_complete: calling mark_complete user=$user_id post=$post_id course=$course_id" );
-            Scormpleted_LearnDash::mark_complete( $user_id, $post_id, $course_id );
+            CourseRelay_LearnDash::mark_complete( $user_id, $post_id, $course_id );
         } else {
-            self::log( "maybe_complete: post_id=0 — no LearnDash post found for content_id=$content_id. Is _scormpleted_content_id meta set on the lesson?" );
+            self::log( "maybe_complete: post_id=0 — no LearnDash post found for content_id=$content_id. Is _courserelay_content_id meta set on the lesson?" );
         }
 
         self::log( "maybe_complete: done. user=$user_id content=$content_id status=$final_status score=$score post=$post_id" );
@@ -512,25 +548,25 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
 
     /**
      * Get LearnDash posts (lessons/topics/quizzes) that embed a given content_id.
-     * Stored as post meta '_scormpleted_content_id' on the lesson post.
+     * Stored as post meta '_courserelay_content_id' on the lesson post.
      */
     public static function get_attached_posts( $content_id ) {
         global $wpdb;
-        $cache_key = 'scormpleted_attached_' . $content_id;
-        $result    = wp_cache_get( $cache_key, 'scormpleted' );
+        $cache_key = 'courserelay_attached_' . $content_id;
+        $result    = wp_cache_get( $cache_key, 'courserelay' );
         if ( false !== $result ) return $result;
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $result = $wpdb->get_results( $wpdb->prepare(
             "SELECT p.ID AS post_id, p.post_type FROM {$wpdb->posts} p
              INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
-             WHERE pm.meta_key = '_scormpleted_content_id'
+             WHERE pm.meta_key = '_courserelay_content_id'
                AND pm.meta_value = %s
                AND p.post_status = 'publish'",
             (string) $content_id
         ) );
 
-        wp_cache_set( $cache_key, $result, 'scormpleted', 300 );
+        wp_cache_set( $cache_key, $result, 'courserelay', 300 );
         return $result ?: array();
     }
 
@@ -568,17 +604,17 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
     // ── Debug Logging ──────────────────────────────────────────────────────────
 
     public static function log( $msg ) {
-        if ( ! Scormpleted_Settings::is_debug() ) return;
+        if ( ! CourseRelay_Settings::is_debug() ) return;
 
         $upload_dir = wp_upload_dir();
 
-        $log_dir = trailingslashit( $upload_dir['basedir'] ) . 'scormpleted';
+        $log_dir = trailingslashit( $upload_dir['basedir'] ) . 'courserelay';
 
         if ( ! file_exists( $log_dir ) ) {
             wp_mkdir_p( $log_dir );
         }
 
-        $log_file = trailingslashit( $log_dir ) . 'scormpleted-debug.log';
+        $log_file = trailingslashit( $log_dir ) . 'courserelay-debug.log';
         $htaccess = trailingslashit( $log_dir ) . '.htaccess';
 
         // Protect log from direct web access on first write
@@ -586,7 +622,7 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
             file_put_contents(
                 $htaccess,
-                "<Files \"scormpleted-debug.log\">\n    Require all denied\n    Deny from all\n</Files>\n"
+                "<Files \"courserelay-debug.log\">\n    Require all denied\n    Deny from all\n</Files>\n"
             );
         }
 
@@ -602,7 +638,7 @@ iframe { width: 100%; height: 100%; border: none; display: block; }
 
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
         error_log(
-            '[Scormpleted ' . gmdate( 'Y-m-d H:i:s' ) . '] ' . $msg . "\n",
+            '[CourseRelay ' . gmdate( 'Y-m-d H:i:s' ) . '] ' . $msg . "\n",
             3,
             $log_file
         );

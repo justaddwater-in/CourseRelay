@@ -1,7 +1,7 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class Scormpleted_Block {
+class CourseRelay_Block {
 
     public static function init() {
         add_action( 'rest_api_init', array( __CLASS__, 'register_rest_routes' ) );
@@ -11,7 +11,7 @@ class Scormpleted_Block {
         if ( ! function_exists( 'register_block_type' ) ) return;
 
         register_block_type(
-            SCORMPLETED_DIR . 'blocks/scorm-player/block.json',
+            COURSERELAY_DIR . 'blocks/scorm-player/block.json',
             array(
                 'render_callback' => array( __CLASS__, 'render_block' ),
             )
@@ -23,16 +23,16 @@ class Scormpleted_Block {
 
     public static function render_block( $attributes ) {
         ob_start();
-        include SCORMPLETED_DIR . 'blocks/scorm-player/render.php';
+        include COURSERELAY_DIR . 'blocks/scorm-player/render.php';
         return ob_get_clean();
     }
 
     public static function enqueue_editor_assets() {
         wp_enqueue_script(
-            'scormpleted-block-editor',
-            SCORMPLETED_URL . 'blocks/scorm-player/index.js',
+            'courserelay-block-editor',
+            COURSERELAY_URL . 'blocks/scorm-player/index.js',
             array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-api-fetch' ),
-            SCORMPLETED_VERSION,
+            COURSERELAY_VERSION,
             true
         );
     }
@@ -40,7 +40,7 @@ class Scormpleted_Block {
     // ── REST API ───────────────────────────────────────────────────────────────
 
     public static function register_rest_routes() {
-        register_rest_route( 'scormpleted/v1', '/packages', array(
+        register_rest_route( 'courserelay/v1', '/packages', array(
             'methods'             => 'GET',
             'callback'            => array( __CLASS__, 'rest_get_packages' ),
             'permission_callback' => function () {
@@ -51,7 +51,7 @@ class Scormpleted_Block {
 
     public static function rest_get_packages( $request ) {
         $per_page = (int) $request->get_param( 'per_page' ) ?: 100;
-        $pkgs     = Scormpleted_Package::get_all_packages( array( 'per_page' => $per_page ) );
+        $pkgs     = CourseRelay_Package::get_all_packages( array( 'per_page' => $per_page ) );
 
         $data = array();
         foreach ( (array) $pkgs as $pkg ) {

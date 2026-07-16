@@ -1,5 +1,5 @@
 /**
- * Scormpleted — SCORM Player Gutenberg Block
+ * CourseRelay — SCORM Player Gutenberg Block
  * Editor-side JS: content picker + preview.
  */
 (function (blocks, element, blockEditor, components, apiFetch) {
@@ -15,7 +15,7 @@
     var useState    = element.useState;
     var useEffect   = element.useEffect;
 
-    blocks.registerBlockType('scormpleted/scorm-player', {
+    blocks.registerBlockType('courserelay/scorm-player', {
         edit: function (props) {
             var attributes = props.attributes;
             var setAttributes = props.setAttributes;
@@ -44,7 +44,7 @@
             setSelected = _sel[1]; var selectedPkg = _sel[0];
 
             element.useEffect(function () {
-                apiFetch({ path: '/scormpleted/v1/packages?per_page=100' })
+                apiFetch({ path: '/courserelay/v1/packages?per_page=100' })
                     .then(function (data) {
                         setPackages(data || []);
                         setLoading(false);

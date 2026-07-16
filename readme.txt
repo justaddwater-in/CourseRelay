@@ -1,4 +1,4 @@
-=== Scormpleted ===
+=== CourseRelay ===
 Contributors: justaddwater
 Tags: scorm, learndash, lms, elearning, scorm player
 Requires at least: 5.8
@@ -12,7 +12,7 @@ Complete SCORM player for LearnDash — upload packages, embed in courses, track
 
 == Description ==
 
-**Scormpleted** is a standalone SCORM player for WordPress and LearnDash. Upload SCORM 1.2 or SCORM 2004 packages, embed them in LearnDash lessons using a Gutenberg block, and automatically mark lessons complete when learners finish — all without any external LRS service.
+**CourseRelay** is a standalone SCORM player for WordPress and LearnDash. Upload SCORM 1.2 or SCORM 2004 packages, embed them in LearnDash lessons using a Gutenberg block, and automatically mark lessons complete when learners finish — all without any external LRS service.
 
 = Features =
 
@@ -47,14 +47,14 @@ Complete SCORM player for LearnDash — upload packages, embed in courses, track
 
 = How to use =
 
-1. Go to **Scormpleted → Add New** and upload a .zip SCORM package
+1. Go to **CourseRelay → Add New** and upload a .zip SCORM package
 2. Open a LearnDash lesson in the Gutenberg editor
 3. Add the **SCORM Content** block and select your package
 4. Publish the lesson — learners who complete the SCORM content will have the lesson marked complete automatically
 
 == Installation ==
 
-1. Upload the `scormpleted` folder to `/wp-content/plugins/`
+1. Upload the `courserelay` folder to `/wp-content/plugins/`
 2. Activate via **Plugins → Installed Plugins**
 3. LearnDash must also be active
 
@@ -74,7 +74,7 @@ No. All data is stored locally in your WordPress database.
 
 = Can I reset a learner's progress for testing? =
 
-Yes. Go to **Scormpleted → Settings** and use the Reset Learner Data tool.
+Yes. Go to **CourseRelay → Settings** and use the Reset Learner Data tool.
 
 == Changelog ==
 

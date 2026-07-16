@@ -1,9 +1,9 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class Scormpleted_Package {
+class CourseRelay_Package {
 
-    const POST_TYPE = 'scormpleted_content';
+    const POST_TYPE = 'courserelay_content';
 
     public static function init() {
         add_action( 'init', array( __CLASS__, 'register_post_type' ) );
@@ -11,13 +11,13 @@ class Scormpleted_Package {
 
     public static function register_post_type() {
         register_post_type( self::POST_TYPE, array(
-            'label'               => __( 'SCORM Content', 'scormpleted' ),
+            'label'               => __( 'SCORM Content', 'courserelay' ),
             'labels'              => array(
-                'name'          => __( 'SCORM Content', 'scormpleted' ),
-                'singular_name' => __( 'SCORM Content', 'scormpleted' ),
-                'add_new'       => __( 'Add New', 'scormpleted' ),
-                'add_new_item'  => __( 'Add New SCORM Content', 'scormpleted' ),
-                'edit_item'     => __( 'Edit SCORM Content', 'scormpleted' ),
+                'name'          => __( 'SCORM Content', 'courserelay' ),
+                'singular_name' => __( 'SCORM Content', 'courserelay' ),
+                'add_new'       => __( 'Add New', 'courserelay' ),
+                'add_new_item'  => __( 'Add New SCORM Content', 'courserelay' ),
+                'edit_item'     => __( 'Edit SCORM Content', 'courserelay' ),
             ),
             'public'              => false,
             'show_ui'             => false,   // We manage our own admin UI
@@ -44,7 +44,7 @@ class Scormpleted_Package {
         // Validate file type
         $ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
         if ( $ext !== 'zip' ) {
-            return array( 'success' => false, 'error' => __( 'Only .zip files are accepted.', 'scormpleted' ) );
+            return array( 'success' => false, 'error' => __( 'Only .zip files are accepted.', 'courserelay' ) );
         }
 
         // Upload to WP uploads
@@ -98,7 +98,7 @@ class Scormpleted_Package {
         $activity_id = $content_url;
 
         // Merge settings
-        $global   = Scormpleted_Settings::get();
+        $global   = CourseRelay_Settings::get();
         $pkg_data = array(
             'post_id'              => $post_id,
             'version'              => $manifest['version'],       // scorm12 | scorm2004
@@ -128,7 +128,7 @@ class Scormpleted_Package {
             self::rmdir_recursive( $extract_result['content_path'] );
             return array(
                 'success' => false,
-                'error'   => __( 'The package files were extracted but could not be saved to the database. Check the Scormpleted debug log or your site\'s error log for details.', 'scormpleted' ),
+                'error'   => __( 'The package files were extracted but could not be saved to the database. Check the CourseRelay debug log or your site\'s error log for details.', 'courserelay' ),
             );
         }
 
@@ -136,15 +136,15 @@ class Scormpleted_Package {
     }
 
     /**
-     * Extract zip to uploads/scormpleted/{post_slug}/
+     * Extract zip to uploads/courserelay/{post_slug}/
      */
     private static function extract_zip( $zip_path ) {
         if ( ! class_exists( 'ZipArchive' ) ) {
-            return array( 'success' => false, 'error' => __( 'ZipArchive PHP extension is required.', 'scormpleted' ) );
+            return array( 'success' => false, 'error' => __( 'ZipArchive PHP extension is required.', 'courserelay' ) );
         }
 
         $upload_dir   = wp_upload_dir();
-        $base         = trailingslashit( $upload_dir['basedir'] ) . 'scormpleted';
+        $base         = trailingslashit( $upload_dir['basedir'] ) . 'courserelay';
         $folder_name  = sanitize_file_name( pathinfo( $zip_path, PATHINFO_FILENAME ) ) . '_' . time();
         $content_path = trailingslashit( $base ) . $folder_name;
 
@@ -152,7 +152,7 @@ class Scormpleted_Package {
 
         $zip = new ZipArchive();
         if ( $zip->open( $zip_path ) !== true ) {
-            return array( 'success' => false, 'error' => __( 'Could not open zip file.', 'scormpleted' ) );
+            return array( 'success' => false, 'error' => __( 'Could not open zip file.', 'courserelay' ) );
         }
 
         // ── ZIP SLIP PROTECTION ───────────────────────────────────────────────
@@ -173,7 +173,7 @@ class Scormpleted_Package {
             if ( strpos( $entry_path, $real_content_path ) !== 0 ) {
                 $zip->close();
                 self::rmdir_recursive( $content_path );
-                return array( 'success' => false, 'error' => __( 'Invalid SCORM package: contains unsafe file paths.', 'scormpleted' ) );
+                return array( 'success' => false, 'error' => __( 'Invalid SCORM package: contains unsafe file paths.', 'courserelay' ) );
             }
         }
 
@@ -188,7 +188,7 @@ class Scormpleted_Package {
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
             file_put_contents(
                 $htaccess,
-                "# Scormpleted: block PHP execution in SCORM content\n" .
+                "# CourseRelay: block PHP execution in SCORM content\n" .
                 "<FilesMatch \"\\.ph(p[2-9]?|tml)$\">\n" .
                 "    Require all denied\n" .
                 "    Deny from all\n" .
@@ -226,13 +226,13 @@ class Scormpleted_Package {
     public static function parse_manifest( $content_path ) {
         $manifest_path = self::find_manifest( $content_path );
         if ( ! $manifest_path ) {
-            return array( 'success' => false, 'error' => __( 'imsmanifest.xml not found. Is this a valid SCORM package?', 'scormpleted' ) );
+            return array( 'success' => false, 'error' => __( 'imsmanifest.xml not found. Is this a valid SCORM package?', 'courserelay' ) );
         }
 
         $dom = new DOMDocument();
         libxml_use_internal_errors( true );
         if ( ! $dom->load( $manifest_path ) ) {
-            return array( 'success' => false, 'error' => __( 'Could not parse imsmanifest.xml.', 'scormpleted' ) );
+            return array( 'success' => false, 'error' => __( 'Could not parse imsmanifest.xml.', 'courserelay' ) );
         }
         libxml_clear_errors();
 
@@ -302,7 +302,7 @@ class Scormpleted_Package {
         }
 
         if ( empty( $launch_file ) ) {
-            return array( 'success' => false, 'error' => __( 'No SCO launch file found in imsmanifest.xml.', 'scormpleted' ) );
+            return array( 'success' => false, 'error' => __( 'No SCO launch file found in imsmanifest.xml.', 'courserelay' ) );
         }
 
         // Resolve relative to manifest subfolder if needed
@@ -326,7 +326,7 @@ class Scormpleted_Package {
 
     public static function save_package_data( $data ) {
         global $wpdb;
-        $table = $wpdb->prefix . 'scormpleted_packages';
+        $table = $wpdb->prefix . 'courserelay_packages';
 
         // Self-heal: if the packages table doesn't exist yet (e.g. the plugin
         // was deployed by copying files rather than clicking "Activate" in
@@ -335,15 +335,15 @@ class Scormpleted_Package {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching
         $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
         if ( ! $table_exists ) {
-            if ( class_exists( 'Scormpleted_Runtime' ) ) {
-                Scormpleted_Runtime::log( "save_package_data: table {$table} missing — running Scormpleted_DB::install()." );
+            if ( class_exists( 'CourseRelay_Runtime' ) ) {
+                CourseRelay_Runtime::log( "save_package_data: table {$table} missing — running CourseRelay_DB::install()." );
             }
-            Scormpleted_DB::install();
+            CourseRelay_DB::install();
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching
             $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
             if ( ! $table_exists ) {
-                if ( class_exists( 'Scormpleted_Runtime' ) ) {
-                    Scormpleted_Runtime::log( "save_package_data: table {$table} still missing after install() — wpdb error: " . $wpdb->last_error );
+                if ( class_exists( 'CourseRelay_Runtime' ) ) {
+                    CourseRelay_Runtime::log( "save_package_data: table {$table} still missing after install() — wpdb error: " . $wpdb->last_error );
                 }
                 return false;
             }
@@ -351,7 +351,7 @@ class Scormpleted_Package {
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $existing = $wpdb->get_var( $wpdb->prepare(
-            "SELECT id FROM `{$wpdb->prefix}scormpleted_packages` WHERE post_id = %d LIMIT 1",
+            "SELECT id FROM `{$wpdb->prefix}courserelay_packages` WHERE post_id = %d LIMIT 1",
             $data['post_id']
         ) );
 
@@ -385,30 +385,30 @@ class Scormpleted_Package {
         }
 
         if ( false === $result ) {
-            if ( class_exists( 'Scormpleted_Runtime' ) ) {
-                Scormpleted_Runtime::log( "save_package_data: DB write failed for post_id={$row['post_id']} — wpdb error: " . $wpdb->last_error );
+            if ( class_exists( 'CourseRelay_Runtime' ) ) {
+                CourseRelay_Runtime::log( "save_package_data: DB write failed for post_id={$row['post_id']} — wpdb error: " . $wpdb->last_error );
             }
             return false;
         }
 
         // Bust the cached row so get_package() doesn't serve a stale/empty result.
-        wp_cache_delete( 'scormpleted_pkg_' . $row['post_id'], 'scormpleted' );
+        wp_cache_delete( 'courserelay_pkg_' . $row['post_id'], 'courserelay' );
 
         return true;
     }
 
     public static function get_package( $post_id ) {
         global $wpdb;
-        $cache_key = 'scormpleted_pkg_' . $post_id;
-        $pkg       = wp_cache_get( $cache_key, 'scormpleted' );
+        $cache_key = 'courserelay_pkg_' . $post_id;
+        $pkg       = wp_cache_get( $cache_key, 'courserelay' );
 
         if ( false === $pkg ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
             $pkg = $wpdb->get_row( $wpdb->prepare(
-                "SELECT * FROM {$wpdb->prefix}scormpleted_packages WHERE post_id = %d LIMIT 1",
+                "SELECT * FROM {$wpdb->prefix}courserelay_packages WHERE post_id = %d LIMIT 1",
                 $post_id
             ) );
-            wp_cache_set( $cache_key, $pkg, 'scormpleted', 300 );
+            wp_cache_set( $cache_key, $pkg, 'courserelay', 300 );
         }
         return $pkg;
     }
@@ -422,7 +422,7 @@ class Scormpleted_Package {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         return $wpdb->get_results( $wpdb->prepare(
             "SELECT s.*, p.post_title, p.post_date
-             FROM {$wpdb->prefix}scormpleted_packages s
+             FROM {$wpdb->prefix}courserelay_packages s
              INNER JOIN {$wpdb->posts} p ON s.post_id = p.ID
              WHERE p.post_type = %s AND p.post_status = 'publish'
              ORDER BY p.post_title ASC
@@ -435,7 +435,7 @@ class Scormpleted_Package {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         return (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}scormpleted_packages s
+            "SELECT COUNT(*) FROM {$wpdb->prefix}courserelay_packages s
              INNER JOIN {$wpdb->posts} p ON s.post_id = p.ID
              WHERE p.post_type = %s AND p.post_status = 'publish'",
             self::POST_TYPE
@@ -467,10 +467,10 @@ class Scormpleted_Package {
         $pkg = self::get_package( $post_id );
         if ( $pkg && ! empty( $pkg->content_path ) ) {
             // ── PATH TRAVERSAL PROTECTION ─────────────────────────────────────
-            // Validate content_path is inside the expected uploads/scormpleted/ dir
+            // Validate content_path is inside the expected uploads/courserelay/ dir
             // before deleting. Prevents damage if DB is compromised.
             $upload_dir        = wp_upload_dir();
-            $allowed_base      = realpath( trailingslashit( $upload_dir['basedir'] ) . 'scormpleted' );
+            $allowed_base      = realpath( trailingslashit( $upload_dir['basedir'] ) . 'courserelay' );
             $real_content_path = realpath( $pkg->content_path );
 
             if (
@@ -484,9 +484,9 @@ class Scormpleted_Package {
         }
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $wpdb->delete( $wpdb->prefix . 'scormpleted_packages', array( 'post_id' => $post_id ), array( '%d' ) );
+        $wpdb->delete( $wpdb->prefix . 'courserelay_packages', array( 'post_id' => $post_id ), array( '%d' ) );
         wp_delete_post( $post_id, true );
-        wp_cache_delete( 'scormpleted_pkg_' . $post_id, 'scormpleted' );
+        wp_cache_delete( 'courserelay_pkg_' . $post_id, 'courserelay' );
     }
 
     // ── Utility ────────────────────────────────────────────────────────────────

@@ -5,49 +5,49 @@ global $wpdb;
 
 // Drop custom tables
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}scormpleted_packages" );
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}courserelay_packages" );
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}scormpleted_scorm_data" );
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}courserelay_scorm_data" );
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}scormpleted_completions" );
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}courserelay_completions" );
 
 // Delete options
-delete_option( 'scormpleted_settings' );
-delete_option( 'scormpleted_db_version' );
+delete_option( 'courserelay_settings' );
+delete_option( 'courserelay_db_version' );
 
 // Remove uploaded content folder using WP_Filesystem
-$scormpleted_upload_dir  = wp_upload_dir();
-$scormpleted_content_dir = trailingslashit( $scormpleted_upload_dir['basedir'] ) . 'scormpleted';
+$courserelay_upload_dir  = wp_upload_dir();
+$courserelay_content_dir = trailingslashit( $courserelay_upload_dir['basedir'] ) . 'courserelay';
 
-if ( is_dir( $scormpleted_content_dir ) ) {
-    scormpleted_uninstall_rmdir( $scormpleted_content_dir );
+if ( is_dir( $courserelay_content_dir ) ) {
+    courserelay_uninstall_rmdir( $courserelay_content_dir );
 }
 
 /**
  * Recursively remove a directory using WP functions.
  *
- * @param string $scormpleted_dir Directory path to remove.
+ * @param string $courserelay_dir Directory path to remove.
  */
-function scormpleted_uninstall_rmdir( $scormpleted_dir ) {
-    if ( ! is_dir( $scormpleted_dir ) ) return;
+function courserelay_uninstall_rmdir( $courserelay_dir ) {
+    if ( ! is_dir( $courserelay_dir ) ) return;
 
-    $scormpleted_items = scandir( $scormpleted_dir );
-    foreach ( $scormpleted_items as $scormpleted_item ) {
-        if ( '.' === $scormpleted_item || '..' === $scormpleted_item ) continue;
-        $scormpleted_path = $scormpleted_dir . DIRECTORY_SEPARATOR . $scormpleted_item;
-        if ( is_dir( $scormpleted_path ) ) {
-            scormpleted_uninstall_rmdir( $scormpleted_path );
+    $courserelay_items = scandir( $courserelay_dir );
+    foreach ( $courserelay_items as $courserelay_item ) {
+        if ( '.' === $courserelay_item || '..' === $courserelay_item ) continue;
+        $courserelay_path = $courserelay_dir . DIRECTORY_SEPARATOR . $courserelay_item;
+        if ( is_dir( $courserelay_path ) ) {
+            courserelay_uninstall_rmdir( $courserelay_path );
         } else {
-            wp_delete_file( $scormpleted_path );
+            wp_delete_file( $courserelay_path );
         }
     }
     // WP_Filesystem doesn't have rmdir; use WP_Filesystem::rmdir if available,
     // otherwise fall back to native rmdir (only after emptying — safe for uninstall context).
     global $wp_filesystem;
     if ( ! empty( $wp_filesystem ) ) {
-        $wp_filesystem->rmdir( $scormpleted_dir );
+        $wp_filesystem->rmdir( $courserelay_dir );
     } else {
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
-        rmdir( $scormpleted_dir );
+        rmdir( $courserelay_dir );
     }
 }
