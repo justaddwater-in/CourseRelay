@@ -5,7 +5,12 @@
     "category": "embed",
     "icon": "welcome-learn-more",
     "description": "Embed a SCORM package in a LearnDash lesson or topic.",
-    "keywords": ["scorm", "elearning", "lms", "learndash"],
+    "keywords": [
+        "scorm",
+        "elearning",
+        "lms",
+        "learndash"
+    ],
     "supports": {
         "html": false,
         "align": false
@@ -26,9 +31,20 @@
         "completionTracking": {
             "type": "boolean",
             "default": true
+        },
+        "displayMode": {
+            "type": "string",
+            "enum": [
+                "embedded",
+                "new_tab",
+                "same_tab"
+            ],
+            "default": "embedded"
         }
     },
     "render": "file:./render.php",
     "editorScript": "file:./index.js",
-    "textdomain": "courserelay"
+    "textdomain": "courserelay",
+    "viewScript": "file:./view.js",
+    "style": "file:./style.css"
 }

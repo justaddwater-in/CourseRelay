@@ -1,0 +1,17 @@
+/* CourseRelay top-level WordPress admin menu icon. */
+#adminmenu #toplevel_page_courserelay .wp-menu-image:before {
+    content: none !important;
+}
+
+#adminmenu #toplevel_page_courserelay .wp-menu-image img {
+    display: block;
+    box-sizing: border-box;
+    width: 20px !important;
+    height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    padding: 0 !important;
+    margin: 7px auto 0 !important;
+    object-fit: contain;
+    opacity: 1;
+}

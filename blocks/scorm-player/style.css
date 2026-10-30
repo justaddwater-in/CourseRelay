@@ -1,0 +1,98 @@
+/* CourseRelay — SCORM block: launch button + popup (modal) player. */
+/* Launch button: inherits the theme's button style via .wp-element-button; */
+/* these are only fallbacks for themes that style no buttons. */
+.courserelay-launch-btn {
+	cursor: pointer;
+	text-decoration: none;
+}
+
+body.courserelay-modal-open {
+	overflow: hidden;
+}
+.courserelay-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 999999;
+	display: flex;
+	flex-direction: column;
+	background: rgba(0, 0, 0, .8);
+	padding: 2vh 2vw;
+	box-sizing: border-box;
+}
+.courserelay-modal__box {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+	max-width: 1400px;
+	width: 100%;
+	margin: 0 auto;
+	background: #fff;
+	border-radius: 6px;
+	overflow: hidden;
+}
+.courserelay-modal__bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex: 0 0 auto;
+	padding: 8px 14px;
+	background: #1d2327;
+	color: #fff;
+	font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.courserelay-modal__title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.courserelay-modal__close {
+	flex: 0 0 auto;
+	padding: 6px 12px;
+	border: 1px solid #8c969d;
+	border-radius: 4px;
+	background: transparent;
+	color: #fff;
+	font: inherit;
+	cursor: pointer;
+}
+.courserelay-modal__close:hover,
+.courserelay-modal__close:focus-visible {
+	background: #3c434a;
+}
+.courserelay-modal__frame {
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+	border: 0;
+	background: #fff;
+}
+@media (max-width: 782px) {
+	.courserelay-modal { padding: 0; }
+	.courserelay-modal__box { border-radius: 0; }
+}
+
+/* CourseRelay learner topic card: align the full module summary with Lessonbay's layout. */
+.courserelay-player-wrap { box-sizing: border-box; max-width: 100%; }
+.courserelay-module-card, .courserelay-module-card * { box-sizing: border-box; }
+.courserelay-module-card {
+  margin: 20px 0 0; padding: 18px; border: 1px solid #dcdcde; border-radius: 12px;
+  background: #fff; color: #1d2327; font-family: inherit; font-size: 14px; line-height: 1.45;
+}
+.courserelay-module-card__header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:0 0 14px; }
+.courserelay-module-card .courserelay-module-card__title { margin:0; padding:0; color:#1d2327; font-family:inherit; font-size:20px; font-weight:600; line-height:1.3; }
+.courserelay-module-card__status { display:inline-flex; flex:0 0 auto; align-items:center; gap:8px; padding:3px 8px; border:1px solid #dcdcde; border-radius:999px; background:#f6f7f7; color:#50575e; font-size:12px; font-weight:500; line-height:1.4; white-space:nowrap; }
+.courserelay-module-card__status span { display:inline-block; width:7px; height:7px; flex:0 0 7px; border-radius:50%; background:currentColor; }
+.courserelay-module-card__status--success { background:#ecf7ed; border-color:#b7dfbe; color:#1e6f32; }
+.courserelay-module-card__status--info { background:#e9f3fc; border-color:#b7d7ef; color:#0f5f95; }
+.courserelay-module-card__status--warning { background:#fff7e8; border-color:#f1d29e; color:#8a5a00; }
+.courserelay-module-card__meta-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:10px; margin:0 0 14px; }
+.courserelay-module-card__meta-item { min-width:0; padding:10px 12px; border:1px solid #dcdcde; border-radius:10px; background:#f6f7f7; }
+.courserelay-module-card__meta-item span { display:block; margin:0 0 4px; color:#646970; font-size:12px; }
+.courserelay-module-card__meta-item strong { display:block; color:#1d2327; font-size:14px; font-weight:600; overflow-wrap:anywhere; }
+.courserelay-module-card__actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0; }
+.courserelay-module-card .courserelay-launch-btn { display:inline-flex; min-height:34px; align-items:center; justify-content:center; margin:0; padding:8px 16px; border:1px solid #235af3; border-radius:28px; background:#235af3; box-shadow:none; color:#fff; font-family:inherit; font-size:13px; font-weight:600; line-height:1.3; text-align:center; text-decoration:none; cursor:pointer; transition:opacity .18s ease-in-out; }
+.courserelay-module-card .courserelay-launch-btn:hover, .courserelay-module-card .courserelay-launch-btn:focus-visible { border-color:#235af3; background:#235af3; color:#fff; opacity:.9; text-decoration:none; }
+.courserelay-module-card .courserelay-launch-btn:focus-visible { outline:2px solid #235af3; outline-offset:3px; }
+@media (max-width:600px) { .courserelay-module-card { padding:14px; } .courserelay-module-card .courserelay-module-card__title { font-size:18px; } .courserelay-module-card__header { align-items:flex-start; } .courserelay-module-card__status { white-space:normal; } }
