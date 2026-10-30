@@ -53,11 +53,26 @@
 		}
 	}
 
+	function getSafeFrameSrc( rawSrc ) {
+		if ( ! rawSrc ) {
+			return null;
+		}
+		try {
+			var parsed = new URL( rawSrc, window.location.href );
+			if ( parsed.protocol !== 'http:' && parsed.protocol !== 'https:' ) {
+				return null;
+			}
+			return parsed.href;
+		} catch ( e ) {
+			return null;
+		}
+	}
+
 	function open( btn ) {
 		if ( overlay ) {
 			return;
 		}
-		var src = btn.getAttribute( 'data-courserelay-src' );
+		var src = getSafeFrameSrc( btn.getAttribute( 'data-courserelay-src' ) );
 		if ( ! src ) {
 			return;
 		}
