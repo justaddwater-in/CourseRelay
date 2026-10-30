@@ -2,7 +2,7 @@
 
 **Upload SCORM packages. Embed in LearnDash lessons. Track completion. No LRS. No subscription. No GrassBlade.**
 
-CourseRelay is a free WordPress plugin that gives LearnDash a complete, standalone SCORM player — without requiring any external LRS service or paid add-ons.
+CourseRelay is a free WordPress plugin that gives LearnDash a complete SCORM player — without requiring any external LRS service or paid add-ons. LearnDash is required for learner access and completion tracking.
 
 ---
 
