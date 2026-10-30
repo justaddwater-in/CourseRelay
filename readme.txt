@@ -2,7 +2,7 @@
 Contributors: justaddwater
 Tags: scorm, learndash, lms, elearning, scorm player
 Requires at least: 5.8
-Tested up to: 7.0
+Tested up to: 7.1
 Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -29,6 +29,7 @@ CourseRelay removes both dependencies. The plugin handles upload, content servin
 * Upload SCORM 1.2 and SCORM 2004 zip packages
 * Auto-detects SCORM version, launch file and mastery score from imsmanifest.xml
 * Gutenberg **SCORM Content** block for LearnDash lessons and topics
+* Four display modes: embedded in the page, popup modal, full screen player in a new tab, or full screen player in the same tab
 * Automatic LearnDash lesson and course mark-complete on SCORM completion
 * LearnDash certificates trigger through the standard LearnDash flow
 * Mastery score and passing percentage support, auto-detected or set per package
@@ -82,7 +83,7 @@ Tested with Articulate Storyline 360, Articulate Rise 360, Adobe Captivate, iSpr
 1. Go to **CourseRelay > Add New** and upload a .zip SCORM package
 2. Open a LearnDash lesson in the Gutenberg editor
 3. Add the **SCORM Content** block and select your package
-4. Optionally override width, height and completion tracking for that block
+4. Choose a display mode, and optionally override width, height and completion tracking for that block
 5. Publish the lesson. Learners who complete the SCORM content will have the lesson marked complete automatically
 
 == Installation ==
@@ -152,17 +153,17 @@ Use the support forum on this page for questions about the plugin. For bug repor
 6. CourseRelay settings screen with defaults, debug mode and the Reset Learner Data tool.
 7. Embedding an uploaded package in a LearnDash lesson with the SCORM Content block.
 8. The SCORM Content block in place in the LearnDash lesson editor, showing the selected package.
-9. The SCORM block now has a Display Mode option: Same Page (Embedded), Full Screen Player (New Tab) or Full Screen Player (Same Tab).
+9. The Display Mode option in the SCORM Content block: embedded, popup modal, or full screen player in a new or the same tab.
 
 == Changelog ==
 
 = 1.1.0 =
-* New: popup (modal) player. The SCORM block now has a Display Mode option: Same Page (Embedded), Full Screen Player (New Tab) or Full Screen Player (Same Tab).
-* Closing the popup ends the SCORM session so progress is saved, and the lesson re-checks completion straight away.
-* Fix: completion polling now works for a lesson with a single SCORM package.
-* Fix: replacing the package in a lesson no longer leaves the old package blocking completion.
-* SCORM 1.2 packages that use the SCORM 2004 API are now supported.
-* New CourseRelay admin menu icon.
+* New: Display Mode option in the SCORM Content block. Choose Same Page (Embedded), Popup (Modal Window), Full Screen Player (New Tab) or Full Screen Player (Same Tab).
+* New: closing the popup player ends the SCORM session so progress is saved, and the lesson re-checks completion immediately.
+* New: SCORM 1.2 packages that call the SCORM 2004 API are now supported.
+* New: CourseRelay admin menu icon.
+* Fix: completion polling now works for a lesson containing a single SCORM package.
+* Fix: replacing the package in a lesson no longer leaves the previous package blocking completion.
 
 = 1.0.0 =
 * Initial release.
@@ -175,6 +176,11 @@ Use the support forum on this page for questions about the plugin. For bug repor
 * WordPress privacy export and erasure integration.
 * Security hardening: zip slip protection, blocked PHP execution inside packages, timing-safe registration validation, content ownership checks, iframe sandboxing and redacted debug logs.
 * Cache purge support for LiteSpeed, WP Rocket, W3 Total Cache and WP Super Cache.
+
+== Upgrade Notice ==
+
+= 1.1.0 =
+Adds popup and full screen display modes, and fixes completion tracking for lessons with a single SCORM package.
 
 == Development ==
 
