@@ -3,7 +3,7 @@ Contributors: justaddwater
 Tags: scorm, learndash, lms, elearning, scorm player
 Requires at least: 5.8
 Tested up to: 7.1
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -156,6 +156,9 @@ Use the support forum on this page for questions about the plugin. For bug repor
 9. The Display Mode option in the SCORM Content block: embedded, popup modal, or full screen player in a new or the same tab.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fixed Popup Modal progress details and Resume button; restored the display-mode option and improved SCORM data persistence.
 
 = 1.1.0 =
 * New: Display Mode option in the SCORM Content block. Choose Same Page (Embedded), Popup (Modal Window), Full Screen Player (New Tab) or Full Screen Player (Same Tab).
