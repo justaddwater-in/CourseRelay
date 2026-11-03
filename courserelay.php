@@ -3,7 +3,7 @@
  * Plugin Name: CourseRelay
  * Plugin URI:  https://github.com/justaddwater-in/CourseRelay
  * Description: Complete SCORM player for LearnDash. Upload SCORM packages, embed them in lessons, and track completion. No external LRS required.
- * Version:     1.1.0
+ * Version:     1.1.1
  * Author:      Justaddwater
  * Author URI:  https://justaddwater.in
  * License:     GPL-2.0+
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define( 'COURSERELAY_VERSION', '1.1.0' );
+define( 'COURSERELAY_VERSION', '1.1.1' );
 define( 'COURSERELAY_FILE', __FILE__ );
 define( 'COURSERELAY_DIR', plugin_dir_path( __FILE__ ) );
 define( 'COURSERELAY_URL', plugin_dir_url( __FILE__ ) );

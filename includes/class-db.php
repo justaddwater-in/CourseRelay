@@ -8,6 +8,9 @@ class CourseRelay_DB {
 	const DB_VERSION_OPTION = 'courserelay_db_version';
 	const DB_VERSION        = '1.0';
 
+	/** Per-request cache of SCORM CMI data, keyed by content/registration/user. */
+	private static $scorm_data_cache = array();
+
 	public static function init() {
 		add_action( 'plugins_loaded', array( __CLASS__, 'maybe_upgrade' ) );
 	}
@@ -184,12 +187,9 @@ class CourseRelay_DB {
 			return is_null( $var_key ) ? array() : $default;
 		}
 
-		// Use a static cache to avoid repeated queries within one request
-		static $cache = array();
-		$cache_key    = "{$content_id}_{$registration_id}_{$user_id}";
-
-		if ( empty( $cache[ $cache_key ] ) ) {
-			// Static $cache array above serves as the per-request cache for this query.
+		// Class-level cache can be refreshed by set_scorm_data() in this request.
+		$cache_key = "{$content_id}_{$registration_id}_{$user_id}";
+		if ( ! array_key_exists( $cache_key, self::$scorm_data_cache ) ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
@@ -203,18 +203,18 @@ class CourseRelay_DB {
 				ARRAY_A
 			);
 
-			$cache[ $cache_key ] = array();
+			self::$scorm_data_cache[ $cache_key ] = array();
 			if ( $rows ) {
 				foreach ( $rows as $row ) {
-					$cache[ $cache_key ][ $row['var_key'] ] = $row['var_value'];
+					self::$scorm_data_cache[ $cache_key ][ $row['var_key'] ] = $row['var_value'];
 				}
 			}
 		}
 
 		if ( is_null( $var_key ) ) {
-			return $cache[ $cache_key ];
+			return self::$scorm_data_cache[ $cache_key ];
 		}
-		return isset( $cache[ $cache_key ][ $var_key ] ) ? $cache[ $cache_key ][ $var_key ] : $default;
+		return isset( self::$scorm_data_cache[ $cache_key ][ $var_key ] ) ? self::$scorm_data_cache[ $cache_key ][ $var_key ] : $default;
 	}
 
 	/**
@@ -230,34 +230,28 @@ class CourseRelay_DB {
 			return false;
 		}
 
-		// Only persist known CMI fields — reject anything not in our allowlist
+		// Only persist known CMI fields — reject anything not in our allowlist.
 		if ( ! self::should_persist_key( $var_key ) ) {
 			return true;
 		}
 
-		// Unslash JSON-heavy fields
+		// Unslash JSON-heavy fields.
 		if ( in_array( $var_key, array( 'cmi.suspend_data', 'cmi.location', 'cmi.core.lesson_location', 'cmi.launch_data' ), true ) ) {
 			$var_value = wp_unslash( $var_value );
 		}
 
-		// ── SANITIZATION ─────────────────────────────────────────────────────
-		// $var_value originates from raw $_REQUEST data sent by the SCORM JS
-		// runtime. Sanitize per-key before it ever reaches the database.
 		$var_value = self::sanitize_cmi_value( $var_key, $var_value );
 
-		// ── SIZE LIMIT ────────────────────────────────────────────────────────
-		// Protect against DoS via huge suspend_data payloads.
-		// SCORM 1.2 spec recommends 4096 chars for suspend_data; we allow 64KB.
+		// Protect against oversized bookmark/state payloads.
 		$size_limited_keys = array( 'cmi.suspend_data', 'cmi.core.lesson_location', 'cmi.location' );
 		if ( in_array( $var_key, $size_limited_keys, true ) && strlen( $var_value ) > 65536 ) {
 			$var_value = substr( $var_value, 0, 65536 );
 		}
 
 		$existing = self::get_scorm_data( $content_id, $registration_id, $var_key, null, $user_id );
-
 		if ( ! is_null( $existing ) ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->update(
+			$result = $wpdb->update(
 				$wpdb->prefix . 'courserelay_scorm_data',
 				array(
 					'var_value'  => $var_value,
@@ -272,7 +266,7 @@ class CourseRelay_DB {
 			);
 		} else {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->insert(
+			$result = $wpdb->insert(
 				$wpdb->prefix . 'courserelay_scorm_data',
 				array(
 					'content_id'      => $content_id,
@@ -284,10 +278,16 @@ class CourseRelay_DB {
 			);
 		}
 
-		// Bust the static cache for this key
+		if ( false === $result ) {
+			return false;
+		}
+
+		// Reflect the successful write in the request cache immediately.
 		$cache_key = "{$content_id}_{$registration_id}_{$user_id}";
-		// Re-fetch will happen on next get call after cache cleared
-		unset( $GLOBALS['_courserelay_cache'][ $cache_key ] );
+		if ( ! isset( self::$scorm_data_cache[ $cache_key ] ) ) {
+			self::$scorm_data_cache[ $cache_key ] = array();
+		}
+		self::$scorm_data_cache[ $cache_key ][ $var_key ] = $var_value;
 
 		return true;
 	}

@@ -251,6 +251,10 @@ cp -r courserelay /path/to/wordpress/wp-content/plugins/
 
 ## Changelog
 
+### 1.1.1
+- Fixed saved progress details and the Resume button in Popup Modal mode.
+- Restored Popup Modal in the block display-mode selector and improved SCORM persistence.
+
 ### 1.0.0
 - Initial release
 - SCORM 1.2 and 2004 support

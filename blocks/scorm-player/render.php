@@ -114,7 +114,7 @@ if ( ! empty( $courserelay_user->ID ) ) {
 				<h3 class="courserelay-module-card__title"><?php echo esc_html( $courserelay_post_title ); ?></h3>
 				<span class="courserelay-module-card__status courserelay-module-card__status--<?php echo esc_attr( $courserelay_status_tone ); ?>"><span aria-hidden="true"></span><?php echo esc_html( $courserelay_topic_status ); ?></span>
 			</div>
-            <?php if ( 'modal' !== $courserelay_display_mode && ( 'Not started' !== $courserelay_attempt_status || $courserelay_score || $courserelay_last_activity ) ) : ?>
+            <?php if ( 'Not started' !== $courserelay_attempt_status || $courserelay_score || $courserelay_last_activity ) : ?>
                 <div class="courserelay-module-card__meta-grid">
                     <div class="courserelay-module-card__meta-item"><span><?php esc_html_e( 'Attempt status', 'courserelay' ); ?></span><strong><?php echo esc_html( $courserelay_attempt_status ); ?></strong></div>
                     <?php if ( '' !== $courserelay_score ) : ?><div class="courserelay-module-card__meta-item"><span><?php esc_html_e( 'Score', 'courserelay' ); ?></span><strong><?php echo esc_html( $courserelay_score ); ?></strong></div><?php endif; ?>
@@ -122,7 +122,7 @@ if ( ! empty( $courserelay_user->ID ) ) {
                 </div>
             <?php endif; ?>
 			<div class="courserelay-module-card__actions">
-				<button type="button" class="courserelay-launch-btn" data-courserelay-modal data-courserelay-src="<?php echo esc_url( $courserelay_launch_url ); ?>" data-courserelay-title="<?php echo esc_attr( $courserelay_post_title ); ?>" data-courserelay-close="<?php echo esc_attr__( 'Close', 'courserelay' ); ?>" aria-haspopup="dialog"><?php esc_html_e( 'Launch module', 'courserelay' ); ?></button>
+				<button type="button" class="courserelay-launch-btn" data-courserelay-modal data-courserelay-src="<?php echo esc_url( $courserelay_launch_url ); ?>" data-courserelay-title="<?php echo esc_attr( $courserelay_post_title ); ?>" data-courserelay-close="<?php echo esc_attr__( 'Close', 'courserelay' ); ?>" aria-haspopup="dialog"><?php echo esc_html( $courserelay_can_resume ? __( 'Resume module', 'courserelay' ) : __( 'Launch module', 'courserelay' ) ); ?></button>
 			</div>
 		</section>
 	<?php elseif ( 'new_tab' === $courserelay_display_mode || 'same_tab' === $courserelay_display_mode ) : ?>
@@ -131,7 +131,7 @@ if ( ! empty( $courserelay_user->ID ) ) {
 				<h3 class="courserelay-module-card__title"><?php echo esc_html( $courserelay_post_title ); ?></h3>
 				<span class="courserelay-module-card__status courserelay-module-card__status--<?php echo esc_attr( $courserelay_status_tone ); ?>"><span aria-hidden="true"></span><?php echo esc_html( $courserelay_topic_status ); ?></span>
 			</div>
-            <?php if ( 'modal' !== $courserelay_display_mode && ( 'Not started' !== $courserelay_attempt_status || $courserelay_score || $courserelay_last_activity ) ) : ?>
+            <?php if ( 'Not started' !== $courserelay_attempt_status || $courserelay_score || $courserelay_last_activity ) : ?>
                 <div class="courserelay-module-card__meta-grid">
                     <div class="courserelay-module-card__meta-item"><span><?php esc_html_e( 'Attempt status', 'courserelay' ); ?></span><strong><?php echo esc_html( $courserelay_attempt_status ); ?></strong></div>
                     <?php if ( '' !== $courserelay_score ) : ?><div class="courserelay-module-card__meta-item"><span><?php esc_html_e( 'Score', 'courserelay' ); ?></span><strong><?php echo esc_html( $courserelay_score ); ?></strong></div><?php endif; ?>

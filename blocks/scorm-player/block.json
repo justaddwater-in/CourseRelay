@@ -36,6 +36,7 @@
             "type": "string",
             "enum": [
                 "embedded",
+                "modal",
                 "new_tab",
                 "same_tab"
             ],

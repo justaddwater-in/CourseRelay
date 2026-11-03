@@ -119,10 +119,11 @@
 							SelectControl,
 							{
 								label: 'Display Mode',
-								help: 'Embed the module on this page, open it in a Full Screen Player in a new tab, or use the current tab.',
+								help: 'Embed the module on this page, open it in a Popup Modal, or launch it in a full-screen player in a new tab or the current tab.',
 								value: displayMode,
 								options: [
 									{ label: 'Same Page (Embedded)', value: 'embedded' },
+									{ label: 'Popup Modal', value: 'modal' },
 									{ label: 'Full Screen Player (New Tab)', value: 'new_tab' },
 									{ label: 'Full Screen Player (Same Tab)', value: 'same_tab' }
 								],
@@ -145,10 +146,11 @@
 							SelectControl,
 							{
 								label: 'Display Mode',
-								help: 'Embed the module on this page, open it in a Full Screen Player in a new tab, or use the current tab.',
+								help: 'Embed the module on this page, open it in a Popup Modal, or launch it in a full-screen player in a new tab or the current tab.',
 								value: displayMode,
 								options: [
 									{ label: 'Same Page (Embedded)', value: 'embedded' },
+									{ label: 'Popup Modal', value: 'modal' },
 									{ label: 'Full Screen Player (New Tab)', value: 'new_tab' },
 									{ label: 'Full Screen Player (Same Tab)', value: 'same_tab' }
 								],
